@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "name": "server56-rgbd-act-v2",
+  "project_root": "${DEPTH_MODEL_ROOT}",
+  "state_dir": "../.state/server56-rgbd-act-v2",
+  "gpu_lock_dir": "/tmp/atdq-gpu-locks",
+  "gpus": [4, 5, 6, 7],
+  "stages": ["smoke", "full"],
+  "poll_seconds": 30,
+  "max_used_memory_mib": 600,
+  "max_attempts": 3,
+  "retry_delay_seconds": 180,
+  "templates": [
+    {
+      "id": "rgbd_act_v2_{tier}_{variant}_{task}",
+      "stage": "{tier}",
+      "matrix": {
+        "tier": [
+          {"value": "smoke", "steps": 1000, "rollouts": 10},
+          {"value": "full", "steps": 30000, "rollouts": 100}
+        ],
+        "variant": ["B0_RGB", "B1_EARLY_RGBD", "B2_GATED_DEPTH", "B3_GATED_XYZMAP", "B4_POINTCLOUD"],
+        "task": [
+          {"value": "stack_blocks_two", "task_config": "depth_master_clean"},
+          {"value": "pick_diverse_bottles", "task_config": "depth_master_clutter"},
+          {"value": "handover_mic", "task_config": "depth_master_clean"}
+        ]
+      },
+      "command": ["bash", "{repo_dir}/adapters/robotwin_act_v2_pipeline.sh", "{project_root}", "{variant}", "{task}", "{task_config}", "{gpu}", "{tier}", "{steps}", "{rollouts}"],
+      "cwd": "{project_root}/repos/RoboTwin",
+      "requires": [
+        "{project_root}/repos/rgbd-act-v2/train_rgbd_act_v2.py",
+        "{project_root}/repos/RoboTwin/script/eval_policy.py",
+        "{project_root}/repos/RoboTwin/task_config/{task_config}.yml",
+        "{project_root}/runtime/sapien-gpu-isolation/libsapien_gpu_redirect.so"
+      ],
+      "completion": {
+        "nonempty_files": [
+          "{project_root}/experiments/RGBDACTv2/{variant}/{task}/{tier}_seed0/policy_step_{steps:06d}.pt",
+          "{project_root}/experiments/RGBDACTv2/{variant}/{task}/{tier}_seed0/policy_best.pt"
+        ],
+        "regex": [{
+          "path": "{project_root}/experiments/RGBDACTv2/{variant}/{task}/{tier}_seed0/status.txt",
+          "pattern": " COMPLETE .*tier={tier} .*rollouts={rollouts} "
+        }]
+      }
+    }
+  ]
+}

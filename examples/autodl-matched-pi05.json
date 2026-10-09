@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "name": "autodl-matched-pi05-stack",
+  "project_root": "${DEPTH_MODEL_ROOT}",
+  "state_dir": "../.state/autodl-matched-pi05",
+  "gpu_lock_dir": "/tmp/atdq-gpu-locks",
+  "gpus": [0, 1, 2],
+  "stages": ["formal"],
+  "poll_seconds": 30,
+  "max_used_memory_mib": 600,
+  "max_attempts": 3,
+  "retry_delay_seconds": 180,
+  "templates": [
+    {
+      "id": "pi05_dpv_{train}__stack_blocks_two_{scene}_{deploy}",
+      "stage": "formal",
+      "matrix": {
+        "train": [
+          {"value": "d0", "checkpoint": "OfficialPi05RGBD/checkpoints/pi05_robotwin_stack_blocks_two_dpv_rgbd_full_4gpu/pi05_stack_blocks_two_dpv_rgbd_full_seed0/20000"},
+          {"value": "d1", "checkpoint": "OfficialPi05RGBD_D1/checkpoints/pi05_robotwin_stack_blocks_two_dpv_d1_full_4gpu/pi05_stack_blocks_two_dpv_d1_full_seed0/20000"},
+          {"value": "d3", "checkpoint": "OfficialPi05RGBD_D3/checkpoints/pi05_robotwin_stack_blocks_two_dpv_d3_full_4gpu/pi05_stack_blocks_two_dpv_d3_full_seed0/20000"}
+        ],
+        "scene": ["easy", "random"],
+        "deploy": ["d0", "d1", "d3"]
+      },
+      "port_base": 26000,
+      "command": ["bash", "{repo_dir}/adapters/autodl_pi05_eval.sh", "{project_root}", "dpv", "{train}", "{scene}", "{deploy}", "{gpu}", "{port}"],
+      "cwd": "{project_root}/repos/RoboTwin",
+      "requires": [
+        "{project_root}/evaluations/stack_matched_eval_20261008/bin/pi05_dpv_worker.sh",
+        "{project_root}/experiments/{checkpoint}/INFERENCE_READY"
+      ],
+      "completion": {
+        "files": ["{project_root}/evaluations/stack_matched_eval_20261008/state/{job_id}/FORMAL_COMPLETE"],
+        "json": {
+          "path": "{project_root}/evaluations/stack_matched_eval_20261008/state/{job_id}/final_result.json",
+          "equals": {"completed": 100, "target_episodes": 100},
+          "results_length": 100,
+          "successes_match_results": true,
+          "unique_seeds": true
+        }
+      }
+    },
+    {
+      "id": "pi05_rgbd4_{train}__stack_blocks_two_{scene}_{deploy}",
+      "stage": "formal",
+      "matrix": {
+        "train": [
+          {"value": "d0", "checkpoint": "OfficialPi05RGBD4_StackBlocksTwo_D0/checkpoints/pi05_stack_rgbd4_d0_full_4gpu/stack_rgbd4_d0_seed0/20000"},
+          {"value": "d1", "checkpoint": "OfficialPi05RGBD4_StackBlocksTwo_D1/checkpoints/pi05_stack_rgbd4_d1_full_4gpu/stack_rgbd4_d1_seed0/20000"},
+          {"value": "d3", "checkpoint": "OfficialPi05RGBD4_StackBlocksTwo_D3/checkpoints/pi05_stack_rgbd4_d3_full_4gpu/stack_rgbd4_d3_seed0/20000"}
+        ],
+        "scene": ["easy", "random"],
+        "deploy": ["d0", "d1", "d3"]
+      },
+      "port_base": 26000,
+      "command": ["bash", "{repo_dir}/adapters/autodl_pi05_eval.sh", "{project_root}", "rgbd4", "{train}", "{scene}", "{deploy}", "{gpu}", "{port}"],
+      "cwd": "{project_root}/repos/RoboTwin",
+      "requires": [
+        "{project_root}/evaluations/stack_matched_eval_20261008/bin/pi05_rgbd4_worker.sh",
+        "{project_root}/experiments/{checkpoint}/INFERENCE_READY"
+      ],
+      "completion": {
+        "files": ["{project_root}/evaluations/stack_matched_eval_20261008/state/{job_id}/FORMAL_COMPLETE"],
+        "json": {
+          "path": "{project_root}/evaluations/stack_matched_eval_20261008/state/{job_id}/final_result.json",
+          "equals": {"completed": 100, "target_episodes": 100},
+          "results_length": 100,
+          "successes_match_results": true,
+          "unique_seeds": true
+        }
+      }
+    }
+  ]
+}

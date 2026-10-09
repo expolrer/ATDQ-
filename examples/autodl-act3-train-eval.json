@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "name": "autodl-act3-hanging-mug",
+  "project_root": "${DEPTH_MODEL_ROOT}",
+  "state_dir": "../.state/autodl-act3-hanging-mug",
+  "gpu_lock_dir": "/tmp/atdq-gpu-locks",
+  "gpus": [0, 1, 2],
+  "stages": ["train", "eval"],
+  "poll_seconds": 30,
+  "max_used_memory_mib": 600,
+  "max_attempts": 3,
+  "retry_delay_seconds": 180,
+  "templates": [
+    {
+      "id": "ACT3_train_{train}",
+      "stage": "train",
+      "matrix": {"train": [
+        {"value": "d0", "readiness": "scheduler/hanging_mug_act3_autodl_workers2_20260929/bin/hanging_mug_act3_workers2_train.sh"},
+        {"value": "d1", "readiness": "scheduler/hanging_mug_act3_autodl_workers2_20260929/state/D1_READY"}
+      ]},
+      "command": ["bash", "{project_root}/scheduler/hanging_mug_act3_autodl_workers2_20260929/bin/hanging_mug_act3_workers2_train.sh", "{train}", "{gpu}"],
+      "cwd": "{project_root}/repos/official-act-rgbd",
+      "requires": [
+        "{project_root}/scheduler/hanging_mug_act3_autodl_workers2_20260929/bin/hanging_mug_act3_workers2_train.sh",
+        "{project_root}/{readiness}"
+      ],
+      "completion": {
+        "files": ["{project_root}/scheduler/hanging_mug_act3_autodl_workers2_20260929/state/{train}/TRAINING_COMPLETE"],
+        "nonempty_files": [
+          "{project_root}/experiments/OfficialACTRGBD/ACT3_DUAL_PER_VIEW/hanging_mug/autodl_workers2_{train}_6000_seed0/training_last.pt",
+          "{project_root}/experiments/OfficialACTRGBD/ACT3_DUAL_PER_VIEW/hanging_mug/autodl_workers2_{train}_6000_seed0/policy_best.ckpt",
+          "{project_root}/experiments/OfficialACTRGBD/ACT3_DUAL_PER_VIEW/hanging_mug/autodl_workers2_{train}_6000_seed0/dataset_stats.pkl"
+        ]
+      }
+    },
+    {
+      "id": "ACT3_DUAL_PER_VIEW_{train}_to_{deploy}",
+      "stage": "eval",
+      "matrix": {"train": ["d0", "d1"], "deploy": ["d0", "d1", "d3"]},
+      "depends_on": ["ACT3_train_{train}"],
+      "command": ["bash", "{project_root}/evaluations/hanging_mug_act3_new_depth_matrix_20260930/bin/hanging_mug_act3_new_depth_matrix_worker.sh", "ACT3_DUAL_PER_VIEW", "{train}", "{deploy}", "{gpu}"],
+      "cwd": "{project_root}/repos/RoboTwin",
+      "requires": [
+        "{project_root}/evaluations/hanging_mug_act3_new_depth_matrix_20260930/bin/hanging_mug_act3_new_depth_matrix_worker.sh",
+        "{project_root}/evaluations/hanging_mug_act3_new_depth_matrix_20260930/state/SEEDS_COMPLETE",
+        "{project_root}/evaluations/hanging_mug_act3_new_depth_matrix_20260930/state/valid_seeds.txt"
+      ],
+      "completion": {
+        "files": ["{project_root}/evaluations/hanging_mug_act3_new_depth_matrix_20260930/state/{job_id}/FORMAL_COMPLETE"],
+        "nonempty_files": ["{project_root}/evaluations/hanging_mug_act3_new_depth_matrix_20260930/state/{job_id}/final_result.json"],
+        "json": {
+          "path": "{project_root}/evaluations/hanging_mug_act3_new_depth_matrix_20260930/state/{job_id}/progress.json",
+          "equals": {"completed": 100, "target_episodes": 100},
+          "results_length": 100,
+          "successes_match_results": true,
+          "unique_seeds": true
+        }
+      }
+    }
+  ]
+}
